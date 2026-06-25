@@ -167,6 +167,20 @@ async def _map_version_to_branch(
     if cve_needs_internal_fix and not older_zstream:
         if major_version in y_streams:
             branch = construct_internal_branch_name(major_version, minor_version)
+            if is_zstream and package:
+                async with mcp_tools(os.getenv("MCP_GATEWAY_URL")) as gateway_tools:
+                    available_branches = await run_tool(
+                        "get_internal_rhel_branches",
+                        available_tools=gateway_tools,
+                        package=package,
+                    )
+                if branch not in available_branches:
+                    cs_branch = f"c{major_version}s"
+                    logger.info(
+                        f"Internal branch {branch} not found for package {package}, "
+                        f"falling back to {cs_branch} (CVE internal fix)"
+                    )
+                    return cs_branch
             logger.info(f"Mapped {version} -> {branch} (CVE internal fix)")
             return branch
         # Default to CentOS Stream for CVEs when no Y-stream
