@@ -217,8 +217,10 @@ def _git(bare_repo: Path, *args: str) -> str:
 
 
 def _find_spec_name(bare_repo: Path, ref: str, package: str) -> str | None:
-    listing = _git(bare_repo, "ls-tree", "-r", "--name-only", ref, "--", "*.spec")
-    specs = [line for line in listing.splitlines() if line.strip()]
+    # `git ls-tree` matches pathspecs literally - it has no glob support - so
+    # passing "*.spec" returns an empty listing. List the tree and filter here.
+    listing = _git(bare_repo, "ls-tree", "-r", "--name-only", ref)
+    specs = [line for line in listing.splitlines() if line.strip().endswith(".spec")]
     if not specs:
         return None
     canonical = f"{package}.spec"
